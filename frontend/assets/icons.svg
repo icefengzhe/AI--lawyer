@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+    <!-- 发送图标 - 简洁的纸飞机 -->
+    <symbol id="icon-send" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M3 20V4l19 8-19 8zm2-3l11.85-5L5 7v3.5l6 1.5-6 1.5V17z"/>
+    </symbol>
+
+    <!-- 新对话图标 - 简约加号 -->
+    <symbol id="icon-new-chat" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M18 13h-5v5c0 .55-.45 1-1 1s-1-.45-1-1v-5H6c-.55 0-1-.45-1-1s.45-1 1-1h5V6c0-.55.45-1 1-1s1 .45 1 1v5h5c.55 0 1 .45 1 1s-.45 1-1 1z"/>
+    </symbol>
+
+    <!-- 删除图标 - 简洁的垃圾桶 -->
+    <symbol id="icon-trash" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M7 21c-.55 0-1.02-.196-1.412-.587A1.927 1.927 0 0 1 5 19V6H4V4h5V3h6v1h5v2h-1v13c0 .55-.196 1.02-.587 1.413A1.927 1.927 0 0 1 17 21H7zM17 6H7v13h10V6zM9 17h2V8H9v9zm4 0h2V8h-2v9z"/>
+    </symbol>
+
+    <!-- 主题切换图标 - 简约月亮 -->
+    <symbol id="icon-theme" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M12 21q-3.75 0-6.375-2.625T3 12q0-3.75 2.625-6.375T12 3q.35 0 .688.025.337.025.662.075-1.025.725-1.687 1.887Q11 6.15 11 7.5q0 2.25 1.575 3.825Q14.15 12.9 16.4 12.9q1.35 0 2.513-.662 1.162-.663 1.887-1.688.05.325.075.663Q21 11.65 21 12q0 3.75-2.625 6.375T12 21z"/>
+    </symbol>
+
+    <!-- 设置图标 - 简约齿轮 -->
+    <symbol id="icon-settings" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7zm0-2a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm-6.9 5.5l-.5-3c-.4-.2-.8-.4-1.1-.6l-2.6 1.5-2.8-4.8 2.6-1.5v-1.2l-2.6-1.5 2.8-4.8 2.6 1.5c.3-.2.7-.4 1.1-.6l.5-3h5.6l.5 3c.4.2.8.4 1.1.6l2.6-1.5 2.8 4.8-2.6 1.5v1.2l2.6 1.5-2.8 4.8-2.6-1.5c-.3.2-.7.4-1.1.6l-.5 3H5.1z"/>
+    </symbol>
+
+    <!-- 退出登录图标 - 简约箭头 -->
+    <symbol id="icon-logout" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M5 21q-.825 0-1.413-.587Q3 19.825 3 19V5q0-.825.587-1.413Q4.175 3 5 3h7v2H5v14h7v2H5zm11-4l-1.375-1.45 2.55-2.55H9v-2h8.175l-2.55-2.55L16 7l5 5-5 5z"/>
+    </symbol>
+
+    <!-- AI思考图标 - 简约脉冲 -->
+    <symbol id="icon-thinking" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="2" fill="currentColor">
+            <animate attributeName="r" values="2;3;2" dur="1.5s" repeatCount="indefinite"/>
+        </circle>
+        <path fill="none" stroke="currentColor" stroke-width="1.5" d="M12 12h0">
+            <animate attributeName="d" values="M12 12h0;M12 6h0;M12 18h0;M6 12h0;M18 12h0;M12 12h0" dur="2s" repeatCount="indefinite"/>
+        </path>
+    </symbol>
+</svg>
