@@ -1,0 +1,9 @@
+{
+  "name": "ai-lawyer-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "marked": "^11.1.0",
+    "highlight.js": "^11.9.0"
+  }
+}

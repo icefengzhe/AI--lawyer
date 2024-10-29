@@ -2,7 +2,7 @@
 
 # 创建主目录结构
 mkdir -p backend/{api/v1,core,crud,db,models,schemas,services}
-mkdir -p frontend/{css,js/api}
+mkdir -p frontend/{css,js/api,lib,resources/lib}
 mkdir -p logs
 
 # 创建后端文件
@@ -15,6 +15,7 @@ touch backend/api/v1/chat.py
 touch backend/core/__init__.py
 touch backend/core/config.py
 touch backend/core/logger.py
+touch backend/core/security.py
 touch backend/crud/__init__.py
 touch backend/crud/base.py
 touch backend/crud/crud_user.py

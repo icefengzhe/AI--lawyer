@@ -239,6 +239,9 @@ body {
     max-width: 80%;
     display: flex;
     flex-direction: column;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: messageIn 0.3s ease forwards;
 }
 
 .message.user {
@@ -251,8 +254,8 @@ body {
 
 .message-text {
     padding: 16px 20px;
-    border-radius: 16px;
-    font-size: 16px;
+    border-radius: 12px;
+    font-size: 15px;
     line-height: 1.6;
     white-space: pre-wrap;
     word-break: break-word;
@@ -261,21 +264,91 @@ body {
 .message.user .message-text {
     background: var(--gradient-primary);
     color: white;
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-sm);
 }
 
 .message.bot .message-text {
     background: var(--surface-light);
     color: var(--text-primary);
-    box-shadow: var(--shadow-sm);
     border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
 }
 
+/* 思考中动画 */
+.thinking {
+    display: inline-flex;
+    gap: 8px;
+    padding: 12px 20px;
+    background: var(--surface-light);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    align-self: flex-start;
+    box-shadow: var(--shadow-sm);
+    animation: messageIn 0.3s ease forwards;
+}
+
+.thinking-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--text-secondary);
+    border-radius: 50%;
+    opacity: 0.6;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* 消息时间 */
 .message-time {
     font-size: 12px;
     color: var(--text-secondary);
-    margin-top: 6px;
+    margin-top: 4px;
     padding: 0 8px;
+    opacity: 0.7;
+}
+
+/* 动画关键帧 */
+@keyframes messageIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        transform: scale(0.8);
+        opacity: 0.5;
+    }
+    50% { 
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+}
+
+/* 错误消息 */
+.message-error {
+    align-self: center;
+    padding: 10px 16px;
+    background-color: rgba(239, 68, 68, 0.1);
+    color: rgb(239, 68, 68);
+    border-radius: 8px;
+    font-size: 14px;
+    margin: 8px 0;
+    opacity: 0;
+    animation: fadeInOut 3s ease forwards;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(-5px); }
+    10% { opacity: 1; transform: translateY(0); }
+    90% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-5px); }
 }
 
 /* 输入区域 */
@@ -350,4 +423,75 @@ body {
 .btn:hover {
     transform: translateY(-1px);
     box-shadow: var(--shadow-md);
-} 
+}
+
+/* Markdown样式 */
+.markdown-body {
+    font-size: 15px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.markdown-body p {
+    margin: 0.8em 0;
+    min-height: 1.6em;
+    white-space: pre-wrap;
+}
+
+.markdown-body br {
+    content: "";
+    display: block;
+    margin: 0.4em 0;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+    margin: 0.8em 0;
+    padding-left: 1.5em;
+    white-space: normal;
+}
+
+.markdown-body li {
+    margin: 0.4em 0;
+    white-space: pre-wrap;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+    margin: 1em 0 0.6em;
+    line-height: 1.4;
+}
+
+.markdown-body blockquote {
+    margin: 0.8em 0;
+    padding: 0.4em 1em;
+    border-left: 4px solid var(--border-color);
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.markdown-body code {
+    padding: 0.2em 0.4em;
+    margin: 0 0.2em;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 3px;
+}
+
+.markdown-body pre {
+    margin: 0.8em 0;
+    padding: 1em;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 6px;
+    overflow-x: auto;
+}
+
+.markdown-body pre code {
+    padding: 0;
+    margin: 0;
+    background: none;
+}
