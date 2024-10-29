@@ -4,46 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>登录 - AI Lawyer</title>
-    <link rel="stylesheet" href="css/login.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/auth.css">
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-box">
-            <h1>AI Lawyer</h1>
-            <p class="subtitle">您的智能法律助手</p>
-            
-            <div class="tabs">
-                <button class="tab-btn active" data-tab="login">登录</button>
-                <button class="tab-btn" data-tab="register">注册</button>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>AI Lawyer</h1>
+                <p>您的智能法律顾问</p>
             </div>
-
-            <form id="login-form" class="form-panel active">
-                <div class="input-group">
-                    <input type="text" id="login-username" placeholder="用户名" required>
+            <form id="login-form" class="auth-form">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" name="username" required>
                 </div>
-                <div class="input-group">
-                    <input type="password" id="login-password" placeholder="密码" required>
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" name="password" required>
                 </div>
-                <button type="submit" class="submit-btn">登录</button>
+                <div class="error-message" id="login-error"></div>
+                <button type="submit" class="auth-submit">登录</button>
+                <div class="auth-links">
+                    <span>还没有账号？</span>
+                    <a href="/register.html">立即注册</a>
+                </div>
             </form>
-
-            <form id="register-form" class="form-panel">
-                <div class="input-group">
-                    <input type="text" id="register-username" placeholder="用户名" required>
-                </div>
-                <div class="input-group">
-                    <input type="password" id="register-password" placeholder="密码" required>
-                </div>
-                <div class="input-group">
-                    <input type="password" id="register-confirm-password" placeholder="确认密码" required>
-                </div>
-                <button type="submit" class="submit-btn">注册</button>
-            </form>
-
-            <div id="error-message" class="error-message"></div>
         </div>
     </div>
-
-    <script type="module" src="js/login.js"></script>
+    <script src="/js/auth.js"></script>
 </body>
-</html>
+</html> 

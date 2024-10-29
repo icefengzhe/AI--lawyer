@@ -1,8 +1,36 @@
-# AI lawyer 技术需求
+# AI Lawyer 技术规格说明
 
-## 概述
+## 1. 系统架构
 
-开发一款名为“AI lawyer”的RAG（Retrieve-and-Generate）应用程序。以下是一些技术要求。
+### 1.1 整体架构
+- 前后端分离架构
+- RESTful API + WebSocket实时通信
+- 基于RAG的智能问答系统
+
+### 1.2 技术栈
+#### 1.2.1 后端技术
+- Python 3.10
+- FastAPI 框架
+- SQLAlchemy ORM
+- LangChain RAG框架
+- ChatTongyi 大语言模型
+- FAISS 向量数据库
+
+### 1.3 安全配置
+- JWT认证
+  - JWT_SECRET_KEY: 用于token的签名和验证
+  - JWT_ALGORITHM: HS256
+  - JWT_EXPIRE_MINUTES: token有效期（分钟）
+
+### 1.4 环境变量
+必需的环境变量：
+- JWT_SECRET_KEY: JWT密钥
+- DASHSCOPE_API_KEY: AI模型API密钥
+
+可选的环境变量：
+- DATABASE_URL: 数据库连接URL
+- LOG_LEVEL: 日志级别
+- VECTOR_DB_PATH: 向量数据库路径
 
 ## 后端技术要求
 
@@ -52,7 +80,6 @@
   - 当页面的 WebSocket 断开时，需要有相关的提示信息。
   - 需要能够重新连接，并在连接成功后将出错信息消除。
 
-## 依赖管理
 
 ### 后端依赖
 
@@ -61,45 +88,29 @@
 - 一些已知的 Python 依赖（与之前相同）：
 
 ```
-langchain==0.2.16
-langchain-community==0.2.16
-langchain-core==0.2.38
-langchain-text-splitters==0.2.4
-fastapi==0.109.2
-faiss-cpu==1.7.3
-ollama==0.3.2
-langchain-ollama==0.1.3
-uvicorn==0.24.0
-python-multipart==0.0.6
-pypdf==3.17.1
-pydantic==2.5.2
-python-dotenv==1.0.0
-websockets==10.4
+langchain
+langchain-community
+langchain-core
+langchain-text-splitters
+fastapi
+faiss-cpu
+ollama
+langchain-ollama
+uvicorn
+python-multipart
+pypdf
+pydantic
+python-dotenv
+websockets
 ```
 
 ### 前端依赖
 
 - 由于使用原生H5开发，主要依赖为构建工具和可能的第三方库（如WebSocket库）。
-- 示例依赖（在`package.json`中，如果使用Webpack和Babel）：
 
-```json
-{
-  "devDependencies": {
-    "webpack": "^5.0.0",
-    "webpack-cli": "^4.0.0",
-    "babel-loader": "^8.0.0",
-    "@babel/core": "^7.0.0",
-    "@babel/preset-env": "^7.0.0",
-    "html-webpack-plugin": "^5.0.0",
-    "webpack-dev-server": "^3.0.0"
-  },
-  "dependencies": {
-    "ws": "^8.0.0" // WebSocket库
-  }
-}
-```
 
 ## 编码规范指南
+
 
 ### 通用规范
 
@@ -113,24 +124,11 @@ websockets==10.4
 
 前端代码存放在项目根目录下的`frontend`目录中（如果使用独立前端目录结构）。
 
-#### 目录结构示例（如果使用Webpack等构建工具）
-
-```
-/frontend/
-├── src/
-│   ├── assets/ # 静态资源（图片、字体等）
-│   ├── js/ # JavaScript文件
-│   ├── css/ # CSS文件
-│   ├── index.html # 入口HTML文件
-│   └── webpack.config.js # Webpack配置文件（如果放在src目录下）
-├── dist/ # 构建输出目录
-├── package.json # 依赖和脚本配置文件
-└── .babelrc # Babel配置文件（如果使用Babel）
-```
 
 ### 后端代码规范
 
-后端代码存放在项目根目录下的`backend`目录中（与之前相同）。
+后端代码存放在项目根目录下的`backend`目录中。
+
 
 ## 日志
 
@@ -153,9 +151,9 @@ websockets==10.4
 
 ### 其他文档
 
-在根目录下创建`docs`目录，用于存放其他相关文档。当相关API的交互以及架构发生变化时，请记得更新以下文档：
+在根目录下创建`docs`目录，用于存放其他相关文档。当相关API的交互以及架构发生变化时，请记得更新以下
+文档：
 
 - `/docs/api-docs.md`：API交互文档
 - `/docs/architecture.md`：项目架构文档
-
 请确保所有文档都保持最新，并易于理解和查找。

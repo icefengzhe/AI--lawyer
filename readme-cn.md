@@ -1,109 +1,118 @@
-# AI 律师
+# AI Lawyer - 智能法律顾问
 
-AI 律师是一个基于网络的应用程序,通过聊天界面提供快速的法律咨询和建议。它使用检索增强生成(RAG)模型来提供准确和上下文感知的回答。
+AI Lawyer 是一个基于大语言模型的智能法律咨询系统，为用户提供专业的法律建议和咨询服务。
 
 ## 功能特点
 
-- 用户注册和登录
-- 法律咨询聊天界面
-- 过往对话历史
-- 自动生成聊天标题
-- 对话反馈系统
-- 聊天内容搜索
-- 分页加载聊天消息
+- 智能法律咨询：提供专业、准确的法律建议
+- 实时对话：流畅的对话体验，支持实时响应
+- 历史记录：保存对话历史，方便随时查看
+- 多主题支持：覆盖多个法律领域
+- 现代化界面：简洁优雅的用户界面设计
 
 ## 技术栈
 
 ### 后端
-- Python 3.10
 - FastAPI
 - SQLAlchemy
-- Langchain
-- ChatTongyi (通义AI模型)
-- FAISS (向量存储)
+- LangChain
+- 通义千问大语言模型
 
 ### 前端
-- HTML5
-- CSS3
-- JavaScript (ES6+)
-- WebSocket (实时通信)
+- 原生JavaScript
+- 现代CSS
+- Server-Sent Events (SSE)
 
-## 设置和安装
+## 快速开始
 
-1. 克隆仓库:
-   ```
-   git clone https://github.com/yourusername/ai-lawyer.git
-   cd ai-lawyer
-   ```
+1. 克隆项目
+```bash
+git clone https://github.com/yourusername/ai-lawyer.git
+cd ai-lawyer
+```
 
-2. 设置虚拟环境:
-   ```
-   python -m venv env
-   source env/bin/activate  # Windows下使用 `env\Scripts\activate`
-   ```
+2. 安装依赖
+```bash
+python -m venv venv
+source venv/bin/activate  # Windows: .\venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-3. 安装所需包:
-   ```
-   pip install -r requirements.txt
-   ```
+3. 配置环境变量
+```bash
+cp .env.example .env
+# 编辑 .env 文件，填入必要的配置信息
+```
 
-4. 设置环境变量:
-   在根目录创建一个 `.env` 文件并添加以下内容:
-   ```
-   DASHSCOPE_API_KEY=你的API密钥
-   DATABASE_URL=sqlite:///./test.db
-   SECRET_KEY=你的密钥
-   VECTOR_DB_PATH=./vector_db
-   ```
+4. 运行项目
+```bash
+chmod +x start.sh  # 添加执行权限
+./start.sh        # 启动服务
+```
 
-5. 初始化数据库:
-   ```
-   python init_db.py
-   ```
-
-6. 运行后端服务器:
-   ```
-   uvicorn app.main:app --reload
-   ```
-
-7. 在网络浏览器中打开 `frontend/login.html` 来使用应用程序。
-
-## 使用方法
-
-1. 在登录页面注册新账户或登录现有账户。
-2. 在主界面的聊天窗口输入您的法律问题,开始新的对话。
-3. 在左侧栏查看您的对话历史,点击可以切换不同的对话。
-4. 使用搜索功能查找特定的聊天内容。
-5. 如有需要,对AI的回答提供反馈。
+访问 http://localhost:8000 即可使用系统。
 
 ## 项目结构
 
 ```
 ai-lawyer/
 ├── backend/
-│   ├── app/
-│   │   ├── models/
-│   │   ├── routers/
-│   │   ├── services/
-│   │   ├── main.py
-│   │   ├── config.py
-│   │   └── database.py
-│   └── requirements.txt
+│   ├── api/          # API路由
+│   ├── core/         # 核心配置
+│   ├── crud/         # 数据库操作
+│   ├── db/           # 数据库配置
+│   ├── models/       # 数据模型
+│   ├── schemas/      # Pydantic模型
+│   └── services/     # 业务逻辑
 ├── frontend/
-│   ├── css/
-│   ├── js/
-│   ├── index.html
-│   └── login.html
-├── .env
-├── .gitignore
-├── README.md
-└── README-cn.md
+│   ├── css/          # 样式文件
+│   ├── js/          # JavaScript文件
+│   └── index.html   # 主页面
+└── logs/            # 日志文件
 ```
 
-## 贡献
+## 环境要求
 
-欢迎贡献!请随时提交Pull Request或开Issue讨论新功能和改进。
+- Python 3.8+
+- Node.js 14+
+- 通义千问API密钥
+
+## 配置说明
+
+在 `.env` 文件中配置以下参数：
+
+```env
+# API设置
+DASHSCOPE_API_KEY=your_api_key
+
+# JWT设置
+JWT_SECRET_KEY=your_secret_key
+JWT_ALGORITHM=HS256
+JWT_EXPIRE_MINUTES=60
+
+# 数据库设置
+DATABASE_URL=sqlite:///./ai_lawyer.db
+
+# 日志设置
+LOG_LEVEL=INFO
+```
+
+## 开发说明
+
+- 后端API遵循RESTful设计规范
+- 使用类型提示和文档字符串
+- 遵循PEP 8编码规范
+- 前端采用模块化设计
 
 ## 许可证
 
-本项目采用MIT许可证。
+MIT License
+
+## 贡献指南
+
+欢迎提交Issue和Pull Request！
+
+## 联系方式
+
+- 邮箱：your.email@example.com
+- GitHub：[your-username](https://github.com/your-username)
