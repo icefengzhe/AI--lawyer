@@ -5,7 +5,7 @@ import logging
 
 from backend.api.v1 import api_router
 from backend.core.config import settings
-from backend.db.base_class import Base
+from backend.db.base import Base  # 这会导入所有模型
 from backend.db.database import engine
 from backend.core.logger import logger
 

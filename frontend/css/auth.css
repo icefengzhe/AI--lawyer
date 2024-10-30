@@ -105,19 +105,21 @@
 .auth-submit {
     width: 100%;
     padding: 12px;
-    background: var(--gradient-primary);
+    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 12px;
     font-size: 15px;
     font-weight: 500;
+    letter-spacing: 0.3px;
     cursor: pointer;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(44, 62, 80, 0.15);
 }
 
 .auth-submit:hover {
     transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 4px 12px rgba(44, 62, 80, 0.2);
 }
 
 .auth-links {

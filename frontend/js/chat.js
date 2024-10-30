@@ -1,4 +1,5 @@
 import { chat } from './api/chat.js';
+import { fileApi } from './api/file.js';
 
 // 等待依赖加载完成
 function waitForDependencies() {
@@ -23,17 +24,35 @@ function waitForDependencies() {
 
 export class ChatUI {
     constructor(container) {
+        if (!container) {
+            throw new Error('Container element is required');
+        }
+        
         this.container = container;
         this.messagesContainer = container.querySelector('.chat-messages');
-        this.input = container.querySelector('#user-input');
-        this.sendButton = container.querySelector('#send-message');
+        this.messageInput = container.querySelector('#message-input');
+        this.sendButton = container.querySelector('#send-btn');
+        this.uploadButton = container.querySelector('#upload-btn');
+        this.fileInput = container.querySelector('#file-input');
         this.historyList = container.querySelector('.history-list');
         this.newChatButton = container.querySelector('.new-chat-btn');
         
         this.currentChatId = null;
         
-        // 初始化依赖
-        this.initDependencies();
+        // 验证必要的元素是否存在
+        if (!this.messagesContainer) throw new Error('Messages container not found');
+        if (!this.messageInput) throw new Error('Message input not found');
+        if (!this.sendButton) throw new Error('Send button not found');
+        if (!this.uploadButton) throw new Error('Upload button not found');
+        if (!this.fileInput) throw new Error('File input not found');
+        if (!this.historyList) throw new Error('History list not found');
+        if (!this.newChatButton) throw new Error('New chat button not found');
+        
+        // 初始化
+        this.initDependencies().catch(error => {
+            console.error('初始化失败:', error);
+            this.showError('系统初始化失败，请刷新页面重试');
+        });
     }
     
     async initDependencies() {
@@ -57,33 +76,68 @@ export class ChatUI {
                 xhtml: false
             });
             
-            // 初始化其他功能
+            // 初始化事件监听和加载历史记录
             this.setupEventListeners();
-            this.loadChatHistory();
+            await this.loadChatHistory();
             
         } catch (error) {
             console.error('初始化失败:', error);
             this.showError('系统初始化失败，请刷新页面重试');
+            throw error;
         }
     }
     
     setupEventListeners() {
         // 发送消息
-        this.sendButton.addEventListener('click', () => this.sendMessage());
-        this.input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
+        this.sendButton.addEventListener('click', () => {
+            const message = this.messageInput.value.trim();
+            if (message) {
                 this.sendMessage();
+                this.messageInput.value = '';
+                this.messageInput.style.height = 'auto';
             }
         });
-        
-        // 新对话
-        this.newChatButton.addEventListener('click', () => this.createNewChat());
-        
+
+        // 文件上传按钮点击
+        this.uploadButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            // 打开新窗口跳转到上传页面
+            window.open('/upload.html', '_blank');
+        });
+
+        // 文件选择处理
+        this.fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                this.handleFiles(e.target.files);
+            }
+        });
+
+        // 输入框回车发送
+        this.messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.sendButton.click();
+            }
+        });
+
         // 自动调整输入框高度
-        this.input.addEventListener('input', () => {
-            this.input.style.height = 'auto';
-            this.input.style.height = (this.input.scrollHeight) + 'px';
+        this.messageInput.addEventListener('input', () => {
+            this.messageInput.style.height = 'auto';
+            this.messageInput.style.height = this.messageInput.scrollHeight + 'px';
+        });
+
+        // 添加退出登录按钮事件
+        const logoutButton = this.container.querySelector('#logout');
+        if (logoutButton) {
+            logoutButton.addEventListener('click', () => {
+                localStorage.removeItem('token');
+                window.location.href = '/login.html';
+            });
+        }
+
+        // 添加新对话按钮事件
+        this.newChatButton.addEventListener('click', () => {
+            this.createNewChat();
         });
     }
     
@@ -136,6 +190,11 @@ export class ChatUI {
             }
         } catch (error) {
             console.error('加载历史记录失败:', error);
+            if (error.message === 'Unauthorized' || error.message === '无效的认证凭据') {
+                localStorage.removeItem('token');
+                window.location.href = '/login.html';
+                return;
+            }
             this.showError('加载历史记录失败，请重试');
         }
     }
@@ -208,7 +267,7 @@ export class ChatUI {
             this.scrollToBottom();
             
         } catch (error) {
-            console.error('加载对话失败:', error);
+            console.error('载对话失败:', error);
             this.showError('加载对话失败，请重试');
         }
     }
@@ -301,13 +360,13 @@ export class ChatUI {
     }
     
     async sendMessage() {
-        const message = this.input.value.trim();
+        const message = this.messageInput.value.trim();
         if (!message || !this.currentChatId) return;
         
         // 添加用户消息
         this.addMessage(message, true);
-        this.input.value = '';
-        this.input.style.height = 'auto';
+        this.messageInput.value = '';
+        this.messageInput.style.height = 'auto';
         
         // 添加思考中动画
         const thinkingDiv = document.createElement('div');
@@ -330,10 +389,7 @@ export class ChatUI {
             timeElement.className = 'message-time';
             
             let responseText = '';
-            let currentParagraph = '';
-            let isInCodeBlock = false;
-            let codeBlockContent = '';
-            let codeBlockLanguage = '';
+            let needFile = false;
             
             const response = await fetch(`/api/v1/chat/${this.currentChatId}/messages/stream`, {
                 method: 'POST',
@@ -348,7 +404,7 @@ export class ChatUI {
                 throw new Error('发送消息失败');
             }
             
-            // 移除思考中动画
+            // 移除思考中画
             thinkingDiv.remove();
             
             // 添加AI消息容器
@@ -370,76 +426,21 @@ export class ChatUI {
                     if (line.startsWith('data: ')) {
                         const content = line.slice(6);
                         responseText += content;
-                        
-                        // 文本预处理
-                        const processedText = responseText
-                            // 处理段落
-                            .split('\n\n')
-                            .map(paragraph => {
-                                // 处理每个段落
-                                return paragraph
-                                    .split('\n')
-                                    .map(line => line.trim())
-                                    .filter(line => line)
-                                    .join('\n');
-                            })
-                            .filter(paragraph => paragraph)
-                            .join('\n\n');
-                        
-                        // 处理特殊格式
-                        const formattedText = processedText
-                            // 处理代码块
-                            .replace(/```([\s\S]*?)```/g, (match, code) => {
-                                const lines = code.trim().split('\n');
-                                const language = lines[0].trim();
-                                const codeContent = lines.slice(1).join('\n');
-                                return `\n\`\`\`${language}\n${codeContent}\n\`\`\`\n`;
-                            })
-                            // 处理行内代码
-                            .replace(/`([^`]+)`/g, '`$1`')
-                            // 处理列表
-                            .replace(/^[*-]\s+/gm, '• ')
-                            .replace(/^\d+\.\s+/gm, (match) => match)
-                            // 处理引用
-                            .replace(/^>\s+/gm, '> ')
-                            // 处理标题
-                            .replace(/^(#{1,6})\s+/gm, (match, hashes) => hashes + ' ');
-                        
-                        // 使用marked渲染Markdown
-                        const htmlContent = window.marked.parse(formattedText, {
-                            breaks: true,
-                            gfm: true,
-                            pedantic: false,
-                            mangle: false,
-                            headerIds: false,
-                            smartLists: true,
-                            smartypants: true
-                        });
-                        
-                        // 添加样式处理
-                        const styledContent = htmlContent
-                            // 段落样式
-                            .replace(/<p>/g, '<p style="margin: 1em 0; line-height: 1.8;">')
-                            // 列表样式
-                            .replace(/<ul>/g, '<ul style="margin: 1em 0; padding-left: 2em;">')
-                            .replace(/<ol>/g, '<ol style="margin: 1em 0; padding-left: 2em;">')
-                            .replace(/<li>/g, '<li style="margin: 0.5em 0;">')
-                            // 代码块样式
-                            .replace(/<pre><code/g, '<pre style="margin: 1em 0; padding: 1em; background: #f6f8fa; border-radius: 6px; overflow-x: auto;"><code')
-                            // 行内代码样式
-                            .replace(/<code>/g, '<code style="padding: 0.2em 0.4em; background: #f6f8fa; border-radius: 3px;">')
-                            // 引用样式
-                            .replace(/<blockquote>/g, '<blockquote style="margin: 1em 0; padding: 0.5em 1em; border-left: 4px solid #ddd; background: #f9f9f9;">')
-                            // 标题样式
-                            .replace(/<h([1-6])>/g, (_, level) => `<h${level} style="margin: 1.5em 0 1em; font-weight: 600; line-height: 1.4;">`);
-                        
-                        aiMessageText.innerHTML = styledContent;
+                        aiMessageText.innerHTML = marked.parse(responseText);
                         this.scrollToBottom();
                     } else if (line.startsWith('event: title')) {
                         const titleLine = lines[lines.indexOf(line) + 1];
                         if (titleLine?.startsWith('data: ')) {
                             const title = titleLine.slice(6);
                             this.updateChatTitle(this.currentChatId, title);
+                        }
+                    } else if (line.startsWith('event: need_file')) {
+                        const needFileLine = lines[lines.indexOf(line) + 1];
+                        if (needFileLine?.startsWith('data: ')) {
+                            needFile = needFileLine.slice(6) === 'true';
+                            if (needFile) {
+                                this.addFileUploadPrompt(aiMessageContainer);
+                            }
                         }
                     }
                 }
@@ -452,6 +453,11 @@ export class ChatUI {
         } catch (error) {
             console.error('发送消息失败:', error);
             thinkingDiv.remove();
+            if (error.message === 'Unauthorized' || error.message === '无效的认证凭据') {
+                localStorage.removeItem('token');
+                window.location.href = '/login.html';
+                return;
+            }
             this.showError('发送消息失败，请重试');
         }
     }
@@ -477,5 +483,36 @@ export class ChatUI {
         setTimeout(() => {
             errorDiv.remove();
         }, 3000);
+    }
+
+    addFileUploadPrompt(messageContainer) {
+        const uploadPrompt = document.createElement('div');
+        uploadPrompt.className = 'file-upload-prompt';
+        uploadPrompt.innerHTML = `
+            <div class="file-upload-header">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M8 1.5V11.5M4.5 7.5L8 11.5L11.5 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M3 14.5H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <span>这个问题可能需要上传相关文件</span>
+            </div>
+            <div class="file-upload-actions">
+                <a href="/upload.html" class="file-upload-btn" target="_blank">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M8 12V4M4.5 7.5L8 4L11.5 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    去上传文件
+                </a>
+                <button class="file-upload-later">稍后再说</button>
+            </div>
+        `;
+
+        // 添加"稍后再说"按钮处理
+        const laterBtn = uploadPrompt.querySelector('.file-upload-later');
+        laterBtn.addEventListener('click', () => {
+            uploadPrompt.remove();
+        });
+
+        messageContainer.appendChild(uploadPrompt);
     }
 } 

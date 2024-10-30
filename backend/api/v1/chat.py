@@ -8,7 +8,7 @@ from backend import crud, schemas
 from backend.api import deps
 from backend.services.chat import get_chat_response
 from backend.core.logger import logger
-from backend.models.chat import Chat
+from backend.models import Chat, Message
 
 router = APIRouter()
 
@@ -72,13 +72,11 @@ async def create_message_stream(
     """发送消息并获取流式响应"""
     logger.info(f"收到消息请求 - chat_id: {chat_id}, user_id: {current_user.id}")
     
-    # 获取对话及其标题
     chat = crud.chat.get(db=db, id=chat_id)
+
     if not chat or chat.user_id != current_user.id:
         logger.error(f"对话不存在或无权限 - chat_id: {chat_id}")
         raise HTTPException(status_code=404, detail="对话不存在")
-    
-    current_title = chat.title
     
     # 获取历史消息
     history = [
@@ -95,31 +93,30 @@ async def create_message_stream(
     )
     logger.info("用户消息已保存")
     
+    current_title = chat.title
+    user_id = chat.user_id
     async def response_stream():
         logger.info("开始生成流式响应")
         response_text = ""
         try:
-            async for token, new_title in get_chat_response(
+            async for token, new_title, need_file in get_chat_response(
                 message=message.content,
-                current_title=current_title,
-                history=history
+                current_title=chat.title,
+                history=history,
+                user_id=user_id
             ):
                 response_text += token
                 yield f"data: {token}\n\n"
                 
                 # 如果有新标题，更新对话标题并发送事件
-                if new_title and new_title != current_title:  # 只在标题变化时更新
-                    try:
-                        # 重新获取chat对象并更新标题
-                        chat_obj = db.query(Chat).filter(Chat.id == chat_id).first()
-                        if chat_obj:
-                            chat_obj.title = new_title
-                            db.add(chat_obj)
-                            db.commit()
-                            logger.info(f"对话标题已更新: {new_title}")
-                            yield f"event: title\ndata: {new_title}\n\n"
-                    except Exception as e:
-                        logger.error(f"更新标题失败: {str(e)}", exc_info=True)
+                if new_title:
+                    crud.chat.update(db=db, id=chat_id, obj_in={"title": new_title})
+                    logger.info(f"对话标题已更新: {new_title}")
+                    yield f"event: title\ndata: {new_title}\n\n"
+                
+                # 如果需要上传文件，发送事件
+                if need_file:
+                    yield f"event: need_file\ndata: true\n\n"
             
             logger.info("AI响应生成完成")
             

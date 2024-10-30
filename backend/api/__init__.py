@@ -1,3 +1,2 @@
-from backend.api.v1 import api_router
-
-__all__ = ["api_router"] 
+# 空文件，标记为Python包
+    

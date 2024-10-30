@@ -6,9 +6,6 @@
     <title>AI Lawyer - 法律咨询助手</title>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/lib/highlight.github.css">
-    <!-- 使用国内CDN加载依赖 -->
-    <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/marked/4.0.2/marked.min.js"></script>
-    <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/highlight.js/11.4.0/highlight.min.js"></script>
 </head>
 <body>
     <div class="chat-container">
@@ -44,24 +41,36 @@
                 <!-- 消息将在这里动态生成 -->
             </div>
             <div class="chat-input-container">
-                <div class="chat-input-wrapper">
+                <div class="input-wrapper">
                     <textarea 
-                        id="user-input" 
-                        placeholder="请输入您的问题..."
+                        id="message-input" 
+                        placeholder="输入消息..." 
                         rows="1"
-                        onInput="this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px';"
+                        maxlength="2000"
                     ></textarea>
-                    <button id="send-message" class="send-btn">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <path d="M14.6667 1.33333L7.33333 8.66667M14.6667 1.33333L10 14.6667L7.33333 8.66667M14.6667 1.33333L1.33333 6L7.33333 8.66667" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        发送
-                    </button>
+                    <div class="action-buttons">
+                        <button id="upload-btn" class="action-btn" title="上传文件">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                        </button>
+                        <button id="send-btn" class="action-btn" title="发送消息">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="22" y1="2" x2="11" y2="13"/>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
+            <!-- 添加文件上传的隐藏input -->
+            <input type="file" id="file-input" style="display: none" multiple>
         </div>
     </div>
-    <!-- 最后加载应用代码 -->
+    <script src="/lib/marked.min.js"></script>
+    <script src="/lib/highlight.min.js"></script>
     <script type="module" src="/js/main.js"></script>
 </body>
 </html> 

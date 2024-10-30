@@ -67,3 +67,14 @@ Authorization: Bearer <access_token>
 - 403: 权限不足
 - 404: 资源不存在
 - 500: 服务器内部错误 
+
+## 基础路径
+所有API都以 `/api/v1` 为基础路径
+
+## 聊天接口
+- POST /chat/send - 发送消息
+- GET /chat/history - 获取聊天历史
+
+## 文件接口
+- POST /files/upload - 上传文件
+- GET /files/list - 获取文件列表 

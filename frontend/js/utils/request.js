@@ -1,58 +1,44 @@
 const BASE_URL = '/api/v1';
 
-export const api = {
-    get: async (url) => {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${BASE_URL}${url}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
-            }
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || '请求失败');
-        }
-        
-        return response.json();
-    },
+async function request(url, options = {}) {
+    const token = localStorage.getItem('token');
     
-    post: async (url, data) => {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${BASE_URL}${url}`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(data)
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || '请求失败');
-        }
-        
-        return response.json();
-    },
+    const defaultOptions = {
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : '',
+        },
+    };
+
+    // 合并headers
+    const mergedOptions = {
+        ...defaultOptions,
+        ...options,
+        headers: {
+            ...defaultOptions.headers,
+            ...(options.headers || {}),
+        },
+    };
+
+    const response = await fetch(url, mergedOptions);
     
-    delete: async (url) => {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${BASE_URL}${url}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
-            }
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || '请求失败');
+    if (!response.ok) {
+        if (response.status === 401) {
+            // 可以在这里处理token过期的情况
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+            throw new Error('Unauthorized');
         }
-        
-        return response.json();
+        throw new Error(response.statusText);
     }
-}; 
+    
+    // 如果响应是空的，返回null
+    if (response.status === 204) {
+        return null;
+    }
+    
+    return response.json();
+}
+
+export { request }; 

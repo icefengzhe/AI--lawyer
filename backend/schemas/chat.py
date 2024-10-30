@@ -2,6 +2,10 @@ from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel
 
+# 添加消息请求模型
+class MessageRequest(BaseModel):
+    content: str
+
 class MessageBase(BaseModel):
     content: str
     role: str

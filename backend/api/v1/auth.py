@@ -69,3 +69,8 @@ async def read_users_me(
     Get current user.
     """
     return current_user
+
+@router.get("/verify")
+async def verify_token(current_user = Depends(deps.get_current_user)):
+    """验证token是否有效"""
+    return {"status": "valid", "user": current_user}

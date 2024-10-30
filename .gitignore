@@ -44,5 +44,7 @@ node_modules/
 package-lock.json
 .DS_Store
 Thumbs.db
+
+# 保留resources目录
 !frontend/resources/
 !frontend/resources/lib/

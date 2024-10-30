@@ -1,35 +1,126 @@
-# AI Lawyer - 智能法律顾问
+# AI-Lawyer 智能法律助手
 
-AI Lawyer 是一个基于大语言模型的智能法律咨询系统，为用户提供专业的法律建议和咨询服务。
+基于通义千问大语言模型的智能法律咨询助手系统。
 
 ## 功能特点
 
-- 智能法律咨询：提供专业、准确的法律建议
-- 实时对话：流畅的对话体验，支持实时响应
-- 历史记录：保存对话历史，方便随时查看
-- 多主题支持：覆盖多个法律领域
-- 现代化界面：简洁优雅的用户界面设计
+- 智能对话：基于通义千问大语言模型的法律咨询对话
+- 文档处理：支持上传和分析法律文档（PDF、Word、TXT等）
+- 向量检索：基于文档内容的智能检索和问答
+- 用户管理：支持多用户系统，数据隔离
+- 实时对话：基于WebSocket的流式对话响应
 
 ## 技术栈
 
 ### 后端
-- FastAPI
-- SQLAlchemy
-- LangChain
-- 通义千问大语言模型
+- FastAPI：高性能的Python Web框架
+- LangChain：大语言模型应用框架
+- ChromaDB：向量数据库
+- SQLAlchemy：ORM框架
+- JWT：用户认证
+- WebSocket：实时通信
 
 ### 前端
-- 原生JavaScript
-- 现代CSS
-- Server-Sent Events (SSE)
+- HTML + JavaScript
+- Element Plus：UI组件库
+- Axios：HTTP客户端
+- Markdown-it：Markdown渲染
+
+## 项目结构
+
+AI-lawyer/
+├── backend/
+│   ├── api/                # API路由
+│   │   ├── v1/            # API版本1
+│   │   │   ├── auth.py    # 认证相关路由
+│   │   │   ├── chat.py    # 聊天相关路由
+│   │   │   └── file.py    # 文件相关路由
+│   │   ├── deps.py        # 依赖项
+│   │   ├── file.py        # 文件处理
+│   │   └── router.py      # 路由注册
+│   ├── services/          # 业务逻辑
+│   │   ├── chat.py        # 聊天服务
+│   │   ├── file.py        # 文件服务
+│   │   └── vector_store.py # 向量存储服务
+│   ├── tools/             # 工具函数
+│   │   └── file_tools.py  # 文件处理工具
+│   └── main.py            # 入口文件
+├── frontend/
+│   ├── index.html         # 主页面
+│   ├── login.html         # 登录页面
+│   └── upload.html        # 文件上传页面
+├── data/                  # 数据目录
+│   ├── uploads/          # 上传文件存储
+│   └── vector_db/        # 向量数据库存储
+├── requirements.txt      # Python依赖
+└── start.sh             # 启动脚本
+
+## API文档
+
+### 认证接口
+- POST /api/v1/register - 用户注册
+- POST /api/v1/token - 用户登录（获取JWT令牌）
+
+### 聊天接口
+- POST /api/v1/chat/send - 发送消息
+- GET /api/v1/chat/history - 获取聊天历史
+- WebSocket /api/v1/chat/ws/{client_id} - 实时对话
+
+### 文件接口
+- POST /api/v1/files/upload - 上传文件
+- GET /api/v1/files/list - 获取文件列表
+- DELETE /api/v1/files/{file_id} - 删除文件
 
 ## 快速开始
 
-1. 克隆项目
+### 环境要求
+- Python 3.10+
+- 通义千问API密钥
+
+### 安装步骤
+
+1. 克隆项目并进入目录
+2. 安装后端依赖：
+```bash
+pip install -r requirements.txt
+```
+
+## 部署指南
+
+### 方式一：Docker部署（推荐）
+
+1. 安装Docker和Docker Compose
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install docker.io docker-compose
+
+# CentOS
+sudo yum install docker docker-compose
+```
+
+2. 克隆项目
 ```bash
 git clone https://github.com/yourusername/ai-lawyer.git
 cd ai-lawyer
 ```
+
+3. 配置环境变量
+```bash
+cp .env.example .env
+# 编辑.env文件，填入必要的配置信息，尤其是DASHSCOPE_API_KEY
+```
+
+4. 构建和启动容器
+```bash
+docker-compose up -d
+```
+
+### 方式二：手动部署
+
+1. 系统要求
+- Python 3.8+
+- 通义千问API密钥
 
 2. 安装依赖
 ```bash
@@ -41,68 +132,30 @@ pip install -r requirements.txt
 3. 配置环境变量
 ```bash
 cp .env.example .env
-# 编辑 .env 文件，填入必要的配置信息
+# 编辑.env文件，填入必要的配置信息
 ```
 
-4. 运行项目
+4. 启动服务
 ```bash
-chmod +x start.sh  # 添加执行权限
-./start.sh        # 启动服务
+chmod +x start.sh
+./start.sh
 ```
 
-访问 http://localhost:8000 即可使用系统。
+## 安全建议
 
-## 项目结构
+1. 修改默认的JWT密钥
+2. 启用HTTPS
+3. 定期更新依赖包
+4. 配置防火墙规则
+5. 启用日志监控
 
-```
-ai-lawyer/
-├── backend/
-│   ├── api/          # API路由
-│   ├── core/         # 核心配置
-│   ├── crud/         # 数据库操作
-│   ├── db/           # 数据库配置
-│   ├── models/       # 数据模型
-│   ├── schemas/      # Pydantic模型
-│   └── services/     # 业务逻辑
-├── frontend/
-│   ├── css/          # 样式文件
-│   ├── js/          # JavaScript文件
-│   └── index.html   # 主页面
-└── logs/            # 日志文件
-```
+## 常见问题
 
-## 环境要求
+Q: 如何获取通义千问API密钥？
+A: 访问[通义千问开放平台](https://dashscope.aliyun.com/)注册账号并创建API密钥。
 
-- Python 3.8+
-- Node.js 14+
-- 通义千问API密钥
-
-## 配置说明
-
-在 `.env` 文件中配置以下参数：
-
-```env
-# API设置
-DASHSCOPE_API_KEY=your_api_key
-
-# JWT设置
-JWT_SECRET_KEY=your_secret_key
-JWT_ALGORITHM=HS256
-JWT_EXPIRE_MINUTES=60
-
-# 数据库设置
-DATABASE_URL=sqlite:///./ai_lawyer.db
-
-# 日志设置
-LOG_LEVEL=INFO
-```
-
-## 开发说明
-
-- 后端API遵循RESTful设计规范
-- 使用类型提示和文档字符串
-- 遵循PEP 8编码规范
-- 前端采用模块化设计
+Q: 如何备份数据？
+A: 定期备份SQLite数据库文件（ai_lawyer.db）。
 
 ## 许可证
 
@@ -114,5 +167,6 @@ MIT License
 
 ## 联系方式
 
-- 邮箱：your.email@example.com
-- GitHub：[your-username](https://github.com/your-username)
+- 邮箱：862628057@qq.com
+- GitHub：(https://github.com/icefengzhe)
+

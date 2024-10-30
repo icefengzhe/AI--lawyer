@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件上传 - AI Lawyer</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/upload.css">
+</head>
+<body>
+    <div class="upload-container">
+        <div class="upload-header">
+            <h1>知识库管理</h1>
+            <p>上传文件到知识库，AI将基于这些资料为您提供更专业的建议</p>
+        </div>
+        
+        <div class="upload-main">
+            <!-- 文件上传区域 -->
+            <div class="upload-area" id="upload-area">
+                <input type="file" id="file-upload" multiple accept=".pdf,.doc,.docx,.txt,image/*" style="display: none;">
+                <div class="upload-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 16V4M7 9L12 4L17 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M20 20H4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="upload-text">
+                    <h3>拖放文件到此处，或点击上传</h3>
+                    <p>支持PDF、Word、图片等格式，单个文件不超过10MB</p>
+                </div>
+                <button class="upload-button">选择文件</button>
+            </div>
+
+            <!-- 文件列表 -->
+            <div class="file-list">
+                <h2>已上传文件</h2>
+                <div class="file-grid" id="file-grid">
+                    <!-- 文件项将通过JavaScript动态添加 -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="/js/upload.js"></script>
+</body>
+</html> 
