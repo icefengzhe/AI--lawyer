@@ -28,6 +28,7 @@
 
 ## 项目结构
 
+```
 AI-lawyer/
 ├── backend/
 │   ├── api/                # API路由
@@ -54,6 +55,7 @@ AI-lawyer/
 │   └── vector_db/        # 向量数据库存储
 ├── requirements.txt      # Python依赖
 └── start.sh             # 启动脚本
+```
 
 ## API文档
 
