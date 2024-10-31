@@ -2,13 +2,32 @@
 
 基于通义千问大语言模型的智能法律咨询助手系统。
 
-## 功能特点
+## 功能特点 ✨
 
-- 智能对话：基于通义千问大语言模型的法律咨询对话
-- 文档处理：支持上传和分析法律文档（PDF、Word、TXT等）
-- 向量检索：基于文档内容的智能检索和问答
-- 用户管理：支持多用户系统，数据隔离
-- 实时对话：基于WebSocket的流式对话响应
+- 🤖 智能对话：基于通义千问大语言模型的法律咨询对话
+- 📄 文档处理：支持上传和分析法律文档（PDF、Word、TXT等）
+- 🔍 向量检索：基于文档内容的智能检索和问答
+- 👥 用户管理：支持多用户系统，数据隔离
+- ⚡ 实时对话：基于WebSocket的流式对话响应
+
+## 环境要求 🛠️
+
+### 必需环境
+- Python 3.10（强制建议，不建议其他版本）
+- Node.js 16+
+- 通义千问API密钥
+
+### 可选环境
+- Docker & Docker Compose (如需容器化部署)
+
+## 快速开始 🚀
+
+### 本地部署
+
+1. 确保安装了 Python 3.10 或更高版本：
+```bash
+python --version
+```
 
 ## 技术栈
 
@@ -57,36 +76,6 @@ AI-lawyer/
 └── start.sh             # 启动脚本
 ```
 
-## API文档
-
-### 认证接口
-- POST /api/v1/register - 用户注册
-- POST /api/v1/token - 用户登录（获取JWT令牌）
-
-### 聊天接口
-- POST /api/v1/chat/send - 发送消息
-- GET /api/v1/chat/history - 获取聊天历史
-- WebSocket /api/v1/chat/ws/{client_id} - 实时对话
-
-### 文件接口
-- POST /api/v1/files/upload - 上传文件
-- GET /api/v1/files/list - 获取文件列表
-- DELETE /api/v1/files/{file_id} - 删除文件
-
-## 快速开始
-
-### 环境要求
-- Python 3.10+
-- 通义千问API密钥
-
-### 安装步骤
-
-1. 克隆项目并进入目录
-2. 安装后端依赖：
-```bash
-pip install -r requirements.txt
-```
-
 ## 部署指南
 
 ### 方式一：Docker部署（推荐）
@@ -120,28 +109,40 @@ docker-compose up -d
 
 ### 方式二：手动部署
 
+#### 使用Python虚拟环境
+
 1. 系统要求
-- Python 3.8+
+- Python 3.10
 - 通义千问API密钥
 
 2. 安装依赖
 ```bash
-python -m venv venv
-source venv/bin/activate  # Windows: .\venv\Scripts\activate
+python -m venv AI-Lawyer
+source AI-Lawyer/bin/activate  # Windows: .\AI-Lawyer\Scripts\activate
 pip install -r requirements.txt
 ```
+#### 或使用 Conda（推荐）
 
-3. 配置环境变量
+1. 安装 Miniconda 或 Anaconda
+
+2. 创建并激活 conda 环境
+```bash
+conda create -n AI-Lawyer python=3.10
+conda activate AI-Lawyer
+```
+
+配置环境变量
 ```bash
 cp .env.example .env
 # 编辑.env文件，填入必要的配置信息
 ```
 
-4. 启动服务
+启动服务
 ```bash
-chmod +x start.sh
-./start.sh
+chmod +x scripts/start.sh
+./scripts/start.sh
 ```
+
 
 ## 安全建议
 

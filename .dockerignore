@@ -1,0 +1,26 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv
+
+# 数据目录
+data/
+uploads/
+
+# 开发文件
+.env
+*.log
+.vscode/
+.idea/
+
+# Docker
+.docker
+Dockerfile
+docker-compose.yml 

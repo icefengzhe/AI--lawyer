@@ -1,0 +1,35 @@
+AI-lawyer/
+├── backend/                    # 后端代码
+│   ├── api/                   # API接口
+│   │   ├── v1/               # API版本1
+│   │   │   ├── auth.py      # 认证相关
+│   │   │   ├── chat.py      # 聊天相关
+│   │   │   └── file.py      # 文件相关
+│   │   ├── deps.py          # 依赖项
+│   │   └── router.py        # 路由注册
+│   ├── services/            # 业务服务
+│   │   ├── chat.py         # 聊天服务
+│   │   ├── file.py         # 文件服务
+│   │   └── vector_store.py # 向量存储服务
+│   └── tools/              # 工具函数
+│       └── file_tools.py   # 文件处理工具
+├── frontend/               # 前端代码
+│   ├── index.html         # 主页面
+│   ├── login.html         # 登录页面
+│   └── upload.html        # 上传页面
+├── scripts/               # 脚本目录
+│   ├── backup.sh         # 数据备份脚本
+│   ├── install.sh        # 安装依赖脚本
+│   ├── setup.sh          # 环境设置脚本
+│   └── start.sh          # 启动脚本
+├── data/                 # 数据目录
+│   ├── uploads/         # 上传文件存储
+│   └── vector_db/       # 向量数据库存储
+├── Dockerfile           # 主 Dockerfile
+├── docker-compose.yml   # Docker Compose 配置
+├── nginx.conf          # Nginx 配置
+├── .dockerignore       # Docker 忽略文件
+├── .env.example        # 环境变量示例
+├── .gitignore         # Git 忽略文件
+├── README.md          # 项目文档
+└── requirements.txt   # Python 依赖 
