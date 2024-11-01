@@ -11,6 +11,6 @@ class File(Base):
     file_path = Column(String)
     file_type = Column(String)
     file_size = Column(Integer)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.now)
     
     user = relationship("User", back_populates="files") 

@@ -22,6 +22,11 @@ function waitForDependencies() {
     });
 }
 
+// 创建一个全局状态管理器
+const GlobalState = {
+    uploadDialogCreated: false
+};
+
 export class ChatUI {
     constructor(container) {
         if (!container) {
@@ -39,6 +44,28 @@ export class ChatUI {
         
         this.currentChatId = null;
         
+        // 状态变量
+        this.isStreaming = false;
+        this.streamComplete = false;
+        this.currentStreamOutput = '';
+        this.autoSyncInterval = null;
+        this.lastCompleteMessage = null;
+        
+        this.ws = null;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 3;
+        this.pendingMessage = null;
+        
+        // 活动消息流追踪
+        this.activeStreams = new Map();
+        this.messageQueue = new Map();
+        
+        // 存储每个对话的消息容器
+        this.chatContainers = new Map();
+        
+        // 流动画计时器Map
+        this.streamAnimationTimers = new Map();
+        
         // 验证必要的元素是否存在
         if (!this.messagesContainer) throw new Error('Messages container not found');
         if (!this.messageInput) throw new Error('Message input not found');
@@ -48,10 +75,18 @@ export class ChatUI {
         if (!this.historyList) throw new Error('History list not found');
         if (!this.newChatButton) throw new Error('New chat button not found');
         
+        // 确保先创建上传对话框
+        this.initUploadDialog();
+        
         // 初始化
         this.initDependencies().catch(error => {
             console.error('初始化失败:', error);
             this.showError('系统初始化失败，请刷新页面重试');
+        });
+        
+        // 添加页面可见性变化监听
+        document.addEventListener('visibilitychange', () => {
+            this.handleVisibilityChange();
         });
     }
     
@@ -92,7 +127,7 @@ export class ChatUI {
         this.sendButton.addEventListener('click', () => {
             const message = this.messageInput.value.trim();
             if (message) {
-                this.sendMessage();
+                this.sendMessage(message);
                 this.messageInput.value = '';
                 this.messageInput.style.height = 'auto';
             }
@@ -101,7 +136,6 @@ export class ChatUI {
         // 文件上传按钮点击
         this.uploadButton.addEventListener('click', (e) => {
             e.preventDefault();
-            // 打开新窗口跳转到上传页面
             window.open('/upload.html', '_blank');
         });
 
@@ -116,7 +150,12 @@ export class ChatUI {
         this.messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                this.sendButton.click();
+                const message = this.messageInput.value.trim();
+                if (message) {
+                    this.sendMessage(message);
+                    this.messageInput.value = '';
+                    this.messageInput.style.height = 'auto';
+                }
             }
         });
 
@@ -126,7 +165,7 @@ export class ChatUI {
             this.messageInput.style.height = this.messageInput.scrollHeight + 'px';
         });
 
-        // 添加退出登录按钮事件
+        // 退出登录按钮事件
         const logoutButton = this.container.querySelector('#logout');
         if (logoutButton) {
             logoutButton.addEventListener('click', () => {
@@ -135,7 +174,7 @@ export class ChatUI {
             });
         }
 
-        // 添加新对话按钮事件
+        // 新对话按钮事件
         this.newChatButton.addEventListener('click', () => {
             this.createNewChat();
         });
@@ -173,7 +212,7 @@ export class ChatUI {
                 // 点击切换对话
                 item.addEventListener('click', () => this.loadChat(chat.id));
                 
-                // 点击删除按钮
+                // 击删除按钮
                 deleteBtn.addEventListener('click', async (e) => {
                     e.stopPropagation();
                     if (confirm('确定要删除这个对话吗？')) {
@@ -190,7 +229,7 @@ export class ChatUI {
             }
         } catch (error) {
             console.error('加载历史记录失败:', error);
-            if (error.message === 'Unauthorized' || error.message === '无效的认证凭据') {
+            if (error.message === 'Unauthorized' || error.message === '据') {
                 localStorage.removeItem('token');
                 window.location.href = '/login.html';
                 return;
@@ -203,7 +242,7 @@ export class ChatUI {
         try {
             await chat.deleteChat(chatId);
             
-            // 如果删除的是当前对话，清空消息区域
+            // 果删除的是当前对话，清空消息区域
             if (chatId === this.currentChatId) {
                 this.currentChatId = null;
                 this.messagesContainer.innerHTML = '';
@@ -213,7 +252,7 @@ export class ChatUI {
             await this.loadChatHistory();
         } catch (error) {
             console.error('删除对话失败:', error);
-            // TODO: 显示错误提示
+            this.showError('删除对话失败，请重试');
         }
     }
     
@@ -237,22 +276,14 @@ export class ChatUI {
                 
                 // 对AI回复使用Markdown解析
                 if (msg.role === 'bot') {
-                    messageText.innerHTML = window.marked.parse(msg.content, {
-                        breaks: true,
-                        gfm: true,
-                        pedantic: false,
-                        mangle: false,
-                        headerIds: false,
-                        smartLists: true,
-                        smartypants: true
-                    });
+                    messageText.innerHTML = window.marked.parse(msg.content);
                 } else {
                     messageText.textContent = msg.content;
                 }
                 
                 const timeElement = document.createElement('div');
                 timeElement.className = 'message-time';
-                timeElement.textContent = new Date(msg.created_at).toLocaleTimeString();
+                timeElement.textContent = this.formatMessageTime(msg.created_at);
                 
                 messageDiv.appendChild(messageText);
                 messageDiv.appendChild(timeElement);
@@ -260,14 +291,12 @@ export class ChatUI {
             });
             
             // 更新历史记录列表中的激活状态
-            document.querySelectorAll('.history-item').forEach(item => {
-                item.classList.toggle('active', item.dataset.chatId === String(chatId));
-            });
+            this.updateHistoryActiveState(chatId);
             
             this.scrollToBottom();
             
         } catch (error) {
-            console.error('载对话失败:', error);
+            console.error('加载对话失败:', error);
             this.showError('加载对话失败，请重试');
         }
     }
@@ -277,52 +306,21 @@ export class ChatUI {
             const newChat = await chat.createChat();
             this.currentChatId = newChat.id;
             
+            // 重置状态
+            this.currentStreamOutput = '';
+            this.lastCompleteMessage = null;
+            this.streamComplete = true;
+            this.stopAutoSync();
+            
             // 清空消息区域
             this.messagesContainer.innerHTML = '';
             
             // 重新加载历史记录
             await this.loadChatHistory();
+            
         } catch (error) {
             console.error('创建新对话失败:', error);
-            // TODO: 显示错误提示
-        }
-    }
-    
-    addMessage(message, isUser = false) {
-        const messageElement = document.createElement('div');
-        messageElement.className = `message ${isUser ? 'user' : 'bot'}`;
-        
-        const textElement = document.createElement('div');
-        textElement.className = 'message-text';
-        textElement.textContent = message;
-        
-        const timeElement = document.createElement('div');
-        timeElement.className = 'message-time';
-        timeElement.textContent = new Date().toLocaleTimeString();
-        
-        messageElement.appendChild(textElement);
-        messageElement.appendChild(timeElement);
-        
-        this.messagesContainer.appendChild(messageElement);
-        this.scrollToBottom();
-    }
-    
-    showTypingIndicator() {
-        const indicator = document.createElement('div');
-        indicator.className = 'typing-indicator';
-        for (let i = 0; i < 3; i++) {
-            const dot = document.createElement('div');
-            dot.className = 'typing-dot';
-            indicator.appendChild(dot);
-        }
-        this.messagesContainer.appendChild(indicator);
-        this.scrollToBottom();
-        return indicator;
-    }
-    
-    removeTypingIndicator(indicator) {
-        if (indicator && indicator.parentNode) {
-            indicator.parentNode.removeChild(indicator);
+            this.showError('创建新对话失败，请重试');
         }
     }
     
@@ -330,138 +328,104 @@ export class ChatUI {
         this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
     }
     
-    formatMessage(text) {
-        // 将连续的换行符替换为单个换行符
-        text = text.replace(/\n{3,}/g, '\n\n');
-        
-        // 处理标题格式
-        text = text.replace(/###\s+(.*)/g, '<h3>$1</h3>');
-        
-        // 处理项目符号
-        text = text.replace(/[•·]\s+(.*)/g, '<li>$1</li>');
-        text = text.replace(/(?:^|\n)[-*]\s+(.*)/g, '<li>$1</li>');
-        
-        // 处理加粗文本
-        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        
-        // 将连续的列表项包装在ul标签中
-        text = text.replace(/(<li>.*?<\/li>)\s*(?=<li>|$)/g, '<ul>$1</ul>');
-        
-        // 处理段落
-        const paragraphs = text.split('\n\n');
-        text = paragraphs.map(p => {
-            if (!p.startsWith('<') && p.trim()) {
-                return `<p>${p}</p>`;
-            }
-            return p;
-        }).join('\n');
-        
-        return text;
-    }
-    
-    async sendMessage() {
-        const message = this.messageInput.value.trim();
-        if (!message || !this.currentChatId) return;
-        
-        // 添加用户消息
-        this.addMessage(message, true);
-        this.messageInput.value = '';
-        this.messageInput.style.height = 'auto';
-        
-        // 添加思考中动画
-        const thinkingDiv = document.createElement('div');
-        thinkingDiv.className = 'thinking';
-        for (let i = 0; i < 3; i++) {
-            const dot = document.createElement('div');
-            dot.className = 'thinking-dot';
-            thinkingDiv.appendChild(dot);
-        }
-        this.messagesContainer.appendChild(thinkingDiv);
-        this.scrollToBottom();
+    async sendMessage(message) {
+        if (!message.trim() || !this.currentChatId) return;
         
         try {
-            // 创建AI消息容器
-            const aiMessageContainer = document.createElement('div');
-            aiMessageContainer.className = 'message bot typing';
-            const aiMessageText = document.createElement('div');
-            aiMessageText.className = 'message-text markdown-body';
-            const timeElement = document.createElement('div');
-            timeElement.className = 'message-time';
+            // 添加用户消息到界面
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user';
+            messageDiv.innerHTML = `
+                <div class="message-text">${message}</div>
+                <div class="message-time">${new Date().toLocaleTimeString()}</div>
+            `;
+            this.messagesContainer.appendChild(messageDiv);
+
+            // 创建机器人消息元素
+            const botDiv = document.createElement('div');
+            botDiv.className = 'message bot typing';
+            botDiv.innerHTML = `
+                <div class="message-text markdown-body"></div>
+                <div class="message-time">${new Date().toLocaleTimeString()}</div>
+            `;
+            this.messagesContainer.appendChild(botDiv);
             
+            this.scrollToBottom();
+
+            // 获取 token
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('未登录');
+            }
+
+            // 创建 WebSocket 连接
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/api/v1/chat/${this.currentChatId}/messages/stream?token=${encodeURIComponent(token)}`;
+
+            const ws = new WebSocket(wsUrl);
             let responseText = '';
-            let needFile = false;
-            
-            const response = await fetch(`/api/v1/chat/${this.currentChatId}/messages/stream`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({ content: message })
-            });
-            
-            if (!response.ok) {
-                throw new Error('发送消息失败');
-            }
-            
-            // 移除思考中画
-            thinkingDiv.remove();
-            
-            // 添加AI消息容器
-            this.messagesContainer.appendChild(aiMessageContainer);
-            aiMessageContainer.appendChild(aiMessageText);
-            aiMessageContainer.appendChild(timeElement);
-            
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                
-                const chunk = decoder.decode(value);
-                const lines = chunk.split('\n');
-                
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        const content = line.slice(6);
-                        responseText += content;
-                        aiMessageText.innerHTML = marked.parse(responseText);
-                        this.scrollToBottom();
-                    } else if (line.startsWith('event: title')) {
-                        const titleLine = lines[lines.indexOf(line) + 1];
-                        if (titleLine?.startsWith('data: ')) {
-                            const title = titleLine.slice(6);
-                            this.updateChatTitle(this.currentChatId, title);
-                        }
-                    } else if (line.startsWith('event: need_file')) {
-                        const needFileLine = lines[lines.indexOf(line) + 1];
-                        if (needFileLine?.startsWith('data: ')) {
-                            needFile = needFileLine.slice(6) === 'true';
-                            if (needFile) {
-                                this.addFileUploadPrompt(aiMessageContainer);
+
+            ws.onopen = () => {
+                ws.send(JSON.stringify({ content: message }));
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    const textElement = botDiv.querySelector('.message-text');
+
+                    switch(data.type) {
+                        case 'token':
+                            if (data.content) {
+                                responseText += data.content;
+                                if (textElement) {
+                                    textElement.innerHTML = window.marked.parse(responseText);
+                                    textElement.querySelectorAll('pre code').forEach((block) => {
+                                        window.hljs.highlightElement(block);
+                                    });
+                                    this.scrollToBottom();
+                                }
                             }
-                        }
+                            break;
+                        case 'title':
+                            if (data.content) {
+                                this.updateChatTitle(this.currentChatId, data.content);
+                            }
+                            break;
+                        case 'error':
+                            this.showError(data.content || '发生错误');
+                            botDiv.remove();
+                            ws.close();
+                            break;
+                        case 'end':
+                            botDiv.classList.remove('typing');
+                            ws.close();
+                            break;
                     }
+                } catch (error) {
+                    console.error('处理消息失败:', error);
+                    this.showError('处理消息失败');
+                    ws.close();
                 }
-            }
-            
-            // 消息接收完成后
-            aiMessageContainer.classList.remove('typing');
-            timeElement.textContent = new Date().toLocaleTimeString();
-            
+            };
+
+            ws.onclose = () => {
+                botDiv.classList.remove('typing');
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket 错误:', error);
+                this.showError('连接错误，请重试');
+                botDiv.remove();
+                ws.close();
+            };
+
         } catch (error) {
             console.error('发送消息失败:', error);
-            thinkingDiv.remove();
-            if (error.message === 'Unauthorized' || error.message === '无效的认证凭据') {
-                localStorage.removeItem('token');
-                window.location.href = '/login.html';
-                return;
-            }
-            this.showError('发送消息失败，请重试');
+            this.showError(error.message || '发送消息失败，请重试');
         }
     }
-    
+
     updateChatTitle(chatId, title) {
         const historyItem = this.historyList.querySelector(`[data-chat-id="${chatId}"]`);
         if (historyItem) {
@@ -485,34 +449,329 @@ export class ChatUI {
         }, 3000);
     }
 
-    addFileUploadPrompt(messageContainer) {
-        const uploadPrompt = document.createElement('div');
-        uploadPrompt.className = 'file-upload-prompt';
-        uploadPrompt.innerHTML = `
-            <div class="file-upload-header">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M8 1.5V11.5M4.5 7.5L8 11.5L11.5 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M3 14.5H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>
-                <span>这个问题可能需要上传相关文件</span>
-            </div>
-            <div class="file-upload-actions">
-                <a href="/upload.html" class="file-upload-btn" target="_blank">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M8 12V4M4.5 7.5L8 4L11.5 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    去上传文件
-                </a>
-                <button class="file-upload-later">稍后再说</button>
+    formatMessageTime(timestamp) {
+        const messageDate = new Date(timestamp);
+        const now = new Date();
+        
+        const timeStr = messageDate.toLocaleTimeString('zh-CN', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        // 判断是否是今天
+        if (messageDate.toDateString() === now.toDateString()) {
+            return timeStr;
+        }
+        
+        // 判断是否是昨天
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (messageDate.toDateString() === yesterday.toDateString()) {
+            return `昨天 ${timeStr}`;
+        }
+        
+        // 判断是否是本年
+        if (messageDate.getFullYear() === now.getFullYear()) {
+            return `${messageDate.getMonth() + 1}月${messageDate.getDate()}日 ${timeStr}`;
+        }
+        
+        // 其他情况显示完整日期
+        return `${messageDate.toLocaleDateString('zh-CN')} ${timeStr}`;
+    }
+
+    handleVisibilityChange() {
+        if (document.visibilityState === 'visible' && !this.streamComplete) {
+            this.startAutoSync();
+        } else if (document.visibilityState === 'hidden') {
+            this.stopAutoSync();
+        }
+    }
+
+    startAutoSync() {
+        if (this.autoSyncInterval) return;
+        
+        this.autoSyncInterval = setInterval(async () => {
+            try {
+                const response = await fetch(`/api/v1/chat/${this.currentChatId}/messages`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                
+                if (!response.ok) throw new Error('同步失败');
+                
+                const messages = await response.json();
+                const lastMessage = messages[messages.length - 1];
+                
+                if (lastMessage && lastMessage.role === 'assistant') {
+                    const messageElement = this.messagesContainer.lastElementChild;
+                    if (messageElement) {
+                        const textElement = messageElement.querySelector('.message-text');
+                        if (textElement) {
+                            textElement.innerHTML = window.marked.parse(lastMessage.content);
+                            if (lastMessage.is_complete) {
+                                messageElement.classList.remove('typing');
+                                this.stopAutoSync();
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('同步消息失败:', error);
+            }
+        }, 1000);
+    }
+
+    stopAutoSync() {
+        if (this.autoSyncInterval) {
+            clearInterval(this.autoSyncInterval);
+            this.autoSyncInterval = null;
+        }
+    }
+
+    cleanup() {
+        if (this.ws) {
+            this.ws.close();
+            this.ws = null;
+        }
+        this.reconnectAttempts = 0;
+        this.pendingMessage = null;
+        this.stopAutoSync();
+        this.streamComplete = true;
+        this.currentStreamOutput = '';
+        
+        // 清理所有消息容器
+        this.chatContainers.forEach(container => {
+            container.remove();
+        });
+        this.chatContainers.clear();
+        this.activeStreams.clear();
+    }
+
+    static checkToken() {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.error('No token found in localStorage');
+            return false;
+        }
+        try {
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+                console.error('Invalid token format');
+                localStorage.removeItem('token');
+                return false;
+            }
+        } catch (e) {
+            console.error('Token validation failed:', e);
+            localStorage.removeItem('token');
+            return false;
+        }
+        return true;
+    }
+
+    updateHistoryActiveState(activeChatId) {
+        document.querySelectorAll('.history-item').forEach(item => {
+            item.classList.toggle('active', item.dataset.chatId === String(activeChatId));
+        });
+    }
+
+    async handleFiles(files) {
+        try {
+            for (const file of files) {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const response = await fileApi.uploadFile(formData);
+                if (response && response.path) {
+                    this.sendMessage(`文件路径：${response.path}`);
+                }
+            }
+        } catch (error) {
+            console.error('文件上传失败:', error);
+            this.showError('文件上传失败，请重试');
+        }
+    }
+
+    initUploadDialog() {
+        // 检查全局状态
+        if (GlobalState.uploadDialogCreated) {
+            console.log('[Upload] 对话框已存在，跳过创建');
+            this.uploadDialog = document.getElementById('upload-dialog');
+            return;
+        }
+
+        console.log('[Upload] 创建新的上传对话框');
+        
+        // 创建对话框
+        const dialogHTML = `
+            <div id="upload-dialog" class="upload-dialog" style="display: none;">
+                <div class="upload-content">
+                    <div class="upload-header">
+                        <h3>上传文件</h3>
+                        <button class="close-btn" id="upload-close-btn">&times;</button>
+                    </div>
+                    <div class="upload-body">
+                        <input type="file" id="file-input" multiple />
+                        <div class="upload-list"></div>
+                    </div>
+                </div>
             </div>
         `;
 
-        // 添加"稍后再说"按钮处理
-        const laterBtn = uploadPrompt.querySelector('.file-upload-later');
-        laterBtn.addEventListener('click', () => {
-            uploadPrompt.remove();
+        // 添加到body
+        document.body.insertAdjacentHTML('beforeend', dialogHTML);
+        
+        // 设置全局状态
+        GlobalState.uploadDialogCreated = true;
+        
+        // 获取对话框引用
+        this.uploadDialog = document.getElementById('upload-dialog');
+        
+        // 绑定事件
+        this.bindUploadEvents();
+    }
+
+    bindUploadEvents() {
+        if (!this.uploadDialog) return;
+
+        // 关闭按钮事件
+        const closeBtn = this.uploadDialog.querySelector('#upload-close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => this.hideUploadDialog());
+        }
+
+        // 点击背景关闭
+        this.uploadDialog.addEventListener('click', (e) => {
+            if (e.target === this.uploadDialog) {
+                this.hideUploadDialog();
+            }
         });
 
-        messageContainer.appendChild(uploadPrompt);
+        // 文件选择事件
+        const fileInput = this.uploadDialog.querySelector('#file-input');
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+        }
     }
-} 
+
+    showUploadDialog() {
+        // 如果对话框不存在，重新初始化
+        if (!document.getElementById('upload-dialog')) {
+            console.log('[Upload] 对话框不存在，重新初始化');
+            GlobalState.uploadDialogCreated = false;
+            this.initUploadDialog();
+        }
+
+        if (this.uploadDialog) {
+            // 重置文件输入和上传列表
+            const fileInput = this.uploadDialog.querySelector('#file-input');
+            const uploadList = this.uploadDialog.querySelector('.upload-list');
+            if (fileInput) fileInput.value = '';
+            if (uploadList) uploadList.innerHTML = '';
+            
+            this.uploadDialog.style.display = 'flex';
+            console.log('[Upload] 显示上传对话框');
+        }
+    }
+
+    hideUploadDialog() {
+        if (this.uploadDialog) {
+            this.uploadDialog.style.display = 'none';
+            console.log('[Upload] 隐藏上传对话框');
+        }
+    }
+
+    handleFileSelect(event) {
+        if (!this.uploadDialog) return;
+        
+        const files = event.target.files;
+        const uploadList = this.uploadDialog.querySelector('.upload-list');
+        if (!uploadList) return;
+
+        uploadList.innerHTML = '';
+
+        Array.from(files).forEach(file => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.innerHTML = `
+                <span>${file.name}</span>
+                <div class="progress-bar">
+                    <div class="progress" style="width: 0%"></div>
+                </div>
+            `;
+            uploadList.appendChild(fileItem);
+        });
+
+        this.uploadFiles(files);
+    }
+
+    async uploadFiles(files) {
+        if (!this.uploadDialog) return;
+        
+        const uploadList = this.uploadDialog.querySelector('.upload-list');
+        if (!uploadList) return;
+
+        for (const file of files) {
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch('/api/v1/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('上传失败');
+                }
+
+                // 更新进度条
+                const fileItems = uploadList.querySelectorAll('.file-item');
+                const fileItem = Array.from(fileItems).find(item => 
+                    item.querySelector('span').textContent === file.name
+                );
+                if (fileItem) {
+                    const progressBar = fileItem.querySelector('.progress');
+                    progressBar.style.width = '100%';
+                    progressBar.style.backgroundColor = '#4CAF50';
+                }
+
+            } catch (error) {
+                console.error('文件上传失败:', error);
+                this.showError(`文件 ${file.name} 上传失败`);
+            }
+        }
+
+        // 上传完成后延迟关闭
+        setTimeout(() => this.hideUploadDialog(), 1500);
+    }
+}
+
+// 在页面加载时清理可能存在的旧对话框
+document.addEventListener('DOMContentLoaded', () => {
+    const oldDialog = document.getElementById('upload-dialog');
+    if (oldDialog) {
+        oldDialog.remove();
+    }
+});
+
+// 添加页面卸载事件处理
+window.addEventListener('beforeunload', () => {
+    // 重置全局状态
+    GlobalState.uploadDialogCreated = false;
+});
+
+// 添加路由变化监听（如果使用了前端路由）
+window.addEventListener('popstate', () => {
+    // 检查并清理重复的对话框
+    const dialogs = document.querySelectorAll('#upload-dialog');
+    if (dialogs.length > 1) {
+        // 保留第一个，删除其他的
+        for (let i = 1; i < dialogs.length; i++) {
+            dialogs[i].remove();
+        }
+    }
+});

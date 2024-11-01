@@ -1,5 +1,4 @@
 # Python
-data/
 __pycache__/
 *.py[cod]
 *$py.class
@@ -41,11 +40,13 @@ logs/
 *.log
 
 # Frontend
+data/
+uploads/
 node_modules/
 package-lock.json
 .DS_Store
 Thumbs.db
 
-# 保留resources目录
+# 保留lib目录
 !frontend/resources/
-!frontend/resources/lib/
+!frontend/lib/

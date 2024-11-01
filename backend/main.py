@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import logging
+import os
+# import pytz
 
 from backend.api.v1 import api_router
 from backend.core.config import settings
@@ -36,6 +38,13 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 app.mount("/", StaticFiles(directory="frontend", html=True), name="static")
 
 logger.info("服务初始化完成")
+
+@app.middleware("http")
+async def add_timezone_header(request, call_next):
+    # 设置时区为中国时区
+    os.environ['TZ'] = 'Asia/Shanghai'
+    response = await call_next(request)
+    return response
 
 if __name__ == "__main__":
     import uvicorn

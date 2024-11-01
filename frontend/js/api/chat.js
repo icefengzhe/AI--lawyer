@@ -4,15 +4,26 @@ import { request } from '../utils/request.js';
 export const chat = {
     // 创建新对话
     createChat: async () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login.html';
+            throw new Error('未登录');
+        }
+
         const response = await fetch('/api/v1/chat/create', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             }
         });
         
         if (!response.ok) {
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                window.location.href = '/login.html';
+                throw new Error('Unauthorized');
+            }
             const error = await response.json();
             throw new Error(error.detail || '创建对话失败');
         }
@@ -22,13 +33,24 @@ export const chat = {
     
     // 获取对话历史
     getHistory: async () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login.html';
+            throw new Error('未登录');
+        }
+
         const response = await fetch('/api/v1/chat/history', {
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Authorization': `Bearer ${token}`
             }
         });
         
         if (!response.ok) {
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                window.location.href = '/login.html';
+                throw new Error('Unauthorized');
+            }
             const error = await response.json();
             throw new Error(error.detail || '获取历史记录失败');
         }
@@ -83,6 +105,37 @@ export const chat = {
         }
         
         return response.json();
+    },
+
+    // 创建WebSocket连接
+    createWebSocket: (chatId) => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login.html';
+            throw new Error('未登录');
+        }
+        
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/api/v1/chat/${chatId}/messages/stream?token=${encodeURIComponent(token)}`;
+        
+        const ws = new WebSocket(wsUrl);
+        
+        ws.onerror = (error) => {
+            console.error('WebSocket错误:', error);
+        };
+        
+        return ws;
+    },
+    
+    // 通过WebSocket发送消息
+    sendMessage: (ws, content) => {
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                content: content
+            }));
+        } else {
+            throw new Error('WebSocket连接未建立');
+        }
     },
     
     // 上传文件
